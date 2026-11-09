@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Hằng Ngày & KPI Nhóm</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwindcss = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Fix cho màu chữ option trên Chrome/Safari/Firefox */
+    select option {
+      background-color: #1f2937 !important;
+      color: #f9fafb !important;
+    }
+    html:not(.dark) select option {
+      background-color: #ffffff !important;
+      color: #111827 !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+  <!-- HEADER -->
+  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+          <i class="fa-solid me-0.5 fa-chart-line"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">KPI Team Manager</h1>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Báo cáo daily & KPI dùng chung</p>
+        </div>
+      </div>
+
+      <!-- User Switcher & Theme Toggle -->
+      <div class="flex items-center space-x-3">
+        <!-- Select User -->
+        <div class="relative flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <span class="text-xs font-semibold px-2 text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <i class="fa-solid fa-user"></i> <span class="hidden sm:inline">Thành viên:</span>
+          </span>
+          <select id="userSelect" onchange="switchUser(this.value)" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-semibold rounded-md px-3 py-1.5 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer">
+            <!-- User Options Injected Here -->
+          </select>
+          <button onclick="openAddUserModal()" title="Tạo tài khoản mới" class="ml-1 p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-md transition" type="button">
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+          <button onclick="deleteCurrentUser()" title="Xóa tài khoản hiện tại" class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-md transition" type="button">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+          <i id="themeIcon" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- TOP DASHBOARD STATS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng KPI</p>
+          <p id="statTotalKpis" class="text-3xl font-extrabold mt-1 text-gray-900 dark:text-white">0</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Số Báo Cáo Daily</p>
+          <p id="statTotalLogs" class="text-3xl font-extrabold mt-1 text-indigo-600 dark:text-indigo-400">0</p>
+        </div>
+        <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Đã Hoàn Thành</p>
+          <p id="statCompletedKpis" class="text-3xl font-extrabold mt-1 text-emerald-600 dark:text-emerald-400">0</p>
+        </div>
+        <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Đóng Góp Của Bạn</p>
+          <p id="statUserContrib" class="text-3xl font-extrabold mt-1 text-amber-500">0</p>
+        </div>
+        <div class="w-12 h-12 bg-amber-50 dark:bg-amber-900/40 text-amber-500 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN ACTION BAR & FILTERS -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center space-x-2 w-full sm:w-auto">
+        <button onclick="openLogModal()" class="flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Báo Cáo Daily Ngày Hôm Nay
+        </button>
+        <button onclick="openKpiModal()" class="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold rounded-xl transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> Tạo KPI Mới
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <select id="filterScope" onchange="render()" class="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-600 focus:outline-none">
+          <option value="all">Tất cả phạm vi</option>
+          <option value="shared">Chỉ KPI Nhóm dùng chung</option>
+          <option value="personal">Chỉ KPI Cá nhân</option>
+        </select>
+
+        <select id="filterCycle" onchange="render()" class="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-600 focus:outline-none">
+          <option value="all">Tất cả chu kỳ</option>
+          <option value="Tuần">KPI Tuần</option>
+          <option value="Tháng">KPI Tháng</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- MAIN KPI TABLE / CARDS -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+        <h2 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-blue-500"></i> Danh Sách Target KPI & Tiến Độ Cộng Dồn
+        </h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Tự động tổng kết khi tới hạn</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+              <th class="py-3.5 px-4 font-semibold">Tên KPI</th>
+              <th class="py-3.5 px-4 font-semibold">Loại KPI</th>
+              <th class="py-3.5 px-4 font-semibold">Thời Hạn</th>
+              <th class="py-3.5 px-4 font-semibold">Tiến Độ / Mục Tiêu</th>
+              <th class="py-3.5 px-4 font-semibold">Đóng Góp Thành Viên</th>
+              <th class="py-3.5 px-4 font-semibold">Trạng Thái</th>
+              <th class="py-3.5 px-4 font-semibold text-right">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="kpiTableBody" class="divide-y divide-gray-100 dark:divide-gray-700">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DAILY LOGS HISTORY & CHARTS GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Left 2 Cols: Recent Daily Logs History -->
+      <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-lg flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Nhật Ký Báo Cáo Hằng Ngày
+          </h3>
+          <span class="text-xs text-gray-500">Mới nhất lên đầu</span>
+        </div>
+
+        <div id="logsHistoryList" class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+          <!-- Logs injected by JS -->
+        </div>
+      </div>
+
+      <!-- Right 1 Col: Visual Analytics Chart -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4 flex flex-col justify-between">
+        <div>
+          <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-pie-chart text-amber-500"></i> Tỷ Lệ Đóng Góp Nhóm
+          </h3>
+          <div class="relative w-full aspect-square max-w-[260px] mx-auto">
+            <canvas id="contribChart"></canvas>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-700 text-center">
+          <button onclick="loadSampleData()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <i class="fa-solid fa-rotate-left"></i> Nạp Dữ Liệu Mẫu Mới
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL 1: TẠO TÀI KHOẢN CHỈ CẦN TÊN -->
+  <div id="addUserModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100 dark:border-gray-700 space-y-5">
+      <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+        <h3 class="font-bold text-lg">Tạo Tài Khoản Mới</h3>
+        <button onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form onsubmit="handleCreateUser(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Tên Thành Viên <span class="text-red-500">*</span></label>
+          <input type="text" id="newUserName" required placeholder="Nhập tên thành viên..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="closeModal('addUserModal')" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">Tạo Thành Viên</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: TẠO/SỬA KPI -->
+  <div id="kpiModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 dark:border-gray-700 space-y-5">
+      <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+        <h3 id="kpiModalTitle" class="font-bold text-lg">Tạo KPI Target Mới</h3>
+        <button onclick="closeModal('kpiModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="handleSaveKpi(event)" class="space-y-4">
+        <input type="hidden" id="kpiId">
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Tên Mục Tiêu KPI <span class="text-red-500">*</span></label>
+          <input type="text" id="kpiTitle" required placeholder="VD: Gọi 100 cuộc gọi Sales, Đọc 5 cuốn sách..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1">Chu Kỳ KPI</label>
+            <select id="kpiCycle" class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 focus:outline-none">
+              <option value="Tuần">KPI Tuần</option>
+              <option value="Tháng">KPI Tháng</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">Phạm Vi Phụ Trách</label>
+            <select id="kpiScope" class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 focus:outline-none">
+              <option value="shared">Dùng chung (Cả nhóm)</option>
+              <option value="personal">Chỉ mình tôi (Cá nhân)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1">Chỉ Số Mục Tiêu <span class="text-red-500">*</span></label>
+            <input type="number" id="kpiTargetValue" required min="1" step="any" placeholder="VD: 50" class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">Đơn Vị Tính <span class="text-red-500">*</span></label>
+            <input type="text" id="kpiUnit" required placeholder="cuộc gọi, giờ, bài viết..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Ngày Hạn Tổng Kết KPI <span class="text-red-500">*</span></label>
+          <input type="date" id="kpiDeadline" required class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-3">
+          <button type="button" onclick="closeModal('kpiModal')" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">Lưu KPI</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: BÁO CÁO DAILY HẰNG NGÀY -->
+  <div id="logModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 dark:border-gray-700 space-y-5">
+      <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-blue-500"></i> Báo Cáo Tiến Độ Daily
+        </h3>
+        <button onclick="closeModal('logModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form onsubmit="handleSaveLog(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Tài Khoản Đang Báo Cáo</label>
+          <div id="logUserDisplay" class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold px-4 py-2 rounded-xl text-sm border border-blue-200 dark:border-blue-800">
+            <!-- Username display -->
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Chọn KPI Muốn Báo Cáo <span class="text-red-500">*</span></label>
+          <select id="logKpiId" required class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Options injected by JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Kết Quả Đạt Được Hôm Nay <span class="text-red-500">*</span></label>
+          <input type="number" id="logValue" required min="0.1" step="any" placeholder="Nhập số lượng thực hiện được..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Ghi Chú Công Việc Daily (Tùy chọn)</label>
+          <textarea id="logNote" rows="3" placeholder="Chi tiết các việc đã hoàn thành trong ngày..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-3">
+          <button type="button" onclick="closeModal('logModal')" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:opacity-90 transition">Gửi Báo Cáo Daily</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // DATA STORAGE
+    let users = [];
+    let currentUserId = "";
+    let kpis = [];
+    let dailyLogs = [];
+    let chartInstance = null;
+
+    // INITIALIZATION
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      if (!users || users.length === 0) {
+        loadSampleData();
+      } else {
+        render();
+      }
+    });
+
+    function loadState() {
+      users = JSON.parse(localStorage.getItem('kpi_users')) || [];
+      currentUserId = localStorage.getItem('kpi_current_user_id') || (users[0] ? users[0].id : "");
+      kpis = JSON.parse(localStorage.getItem('kpi_items')) || [];
+      dailyLogs = JSON.parse(localStorage.getItem('kpi_logs')) || [];
+    }
+
+    function saveState() {
+      localStorage.setItem('kpi_users', JSON.stringify(users));
+      localStorage.setItem('kpi_current_user_id', currentUserId);
+      localStorage.setItem('kpi_items', JSON.stringify(kpis));
+      localStorage.setItem('kpi_logs', JSON.stringify(dailyLogs));
+    }
+
+    function loadSampleData() {
+      users = [
+        { id: "u1", name: "Nguyễn Văn A" },
+        { id: "u2", name: "Trần Thị B" }
+      ];
+      currentUserId = "u1";
+
+      const today = new Date().toISOString().split('T')[0];
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+      kpis = [
+        { id: "k1", title: "Gọi Điện Tư Vấn Khách Hàng", target: 100, unit: "cuộc gọi", cycle: "Tuần", scope: "shared", deadline: nextWeek, creatorId: "u1" },
+        { id: "k2", title: "Viết Bài Đăng Marketing", target: 10, unit: "bài viết", cycle: "Tháng", scope: "shared", deadline: nextWeek, creatorId: "u2" }
+      ];
+
+      dailyLogs = [
+        { id: "l1", kpiId: "k1", userId: "u1", value: 25, note: "Gọi danh sách KH mới", date: today },
+        { id: "l2", kpiId: "k1", userId: "u2", value: 30, note: "Chăm sóc khách cũ", date: today },
+        { id: "l3", kpiId: "k2", userId: "u2", value: 3, note: "Đã viết 3 bài Facebook", date: today }
+      ];
+
+      saveState();
+      render();
+    }
+
+    // MAIN RENDER FUNCTION
+    function render() {
+      renderUserSelect();
+      renderStats();
+      renderKpiTable();
+      renderLogsHistory();
+      renderContribChart();
+    }
+
+    function renderUserSelect() {
+      const select = document.getElementById('userSelect');
+      select.innerHTML = users.map(u => 
+        `<option value="${u.id}" ${u.id === currentUserId ? 'selected' : ''}>${u.name}</option>`
+      ).join('');
+    }
+
+    function switchUser(userId) {
+      currentUserId = userId;
+      saveState();
+      render();
+    }
+
+    function openAddUserModal() {
+      document.getElementById('newUserName').value = '';
+      document.getElementById('addUserModal').classList.remove('hidden');
+    }
+
+    function handleCreateUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('newUserName').value.trim();
+      if (!name) return;
+
+      const newUser = {
+        id: "u_" + Date.now(),
+        name: name
+      };
+
+      users.push(newUser);
+      currentUserId = newUser.id;
+      saveState();
+      closeModal('addUserModal');
+      render();
+    }
+
+    function deleteCurrentUser() {
+      if (users.length <= 1) {
+        alert("Cần giữ lại ít nhất 1 thành viên trong hệ thống!");
+        return;
+      }
+      const currentUser = users.find(u => u.id === currentUserId);
+      if (confirm(`Bạn có chắc chắn muốn xóa thành viên "${currentUser.name}" không?`)) {
+        users = users.filter(u => u.id !== currentUserId);
+        currentUserId = users[0].id;
+        saveState();
+        render();
+      }
+    }
+
+    // RENDER KPI TABLE
+    function renderKpiTable() {
+      const scopeFilter = document.getElementById('filterScope').value;
+      const cycleFilter = document.getElementById('filterCycle').value;
+      const tbody = document.getElementById('kpiTableBody');
+
+      let filtered = kpis.filter(k => {
+        if (scopeFilter === 'shared' && k.scope !== 'shared') return false;
+        if (scopeFilter === 'personal' && (k.scope !== 'personal' || k.creatorId !== currentUserId)) return false;
+        if (cycleFilter !== 'all' && k.cycle !== cycleFilter) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400">Chưa có KPI nào phù hợp. Bấm "Tạo KPI Mới" để bắt đầu!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(k => {
+        // Calculate progress total for this KPI
+        const logsForKpi = dailyLogs.filter(l => l.kpiId === k.id);
+        const totalProgress = logsForKpi.reduce((sum, l) => sum + Number(l.value), 0);
+        const percent = Math.min(Math.round((totalProgress / k.target) * 100), 100);
+
+        // Contribution breakdown by user
+        const contribMap = {};
+        logsForKpi.forEach(l => {
+          contribMap[l.userId] = (contribMap[l.userId] || 0) + Number(l.value);
+        });
+
+        const contribHtml = Object.keys(contribMap).map(uid => {
+          const u = users.find(x => x.id === uid) || { name: "Thành viên cũ" };
+          const val = contribMap[uid];
+          const uPercent = Math.round((val / (totalProgress || 1)) * 100);
+          return `<span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-xs px-2 py-0.5 rounded-md mr-1 mb-1" title="${u.name}: ${val} ${k.unit}">
+            <strong>${u.name}:</strong> ${val} (${uPercent}%)
+          </span>`;
+        }).join('') || '<span class="text-xs text-gray-400">Chưa có báo cáo</span>';
+
+        // Evaluation status based on deadline & target
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isPassed = k.deadline < todayStr;
+        const isReached = totalProgress >= k.target;
+
+        let statusBadge = '';
+        if (isReached) {
+          statusBadge = `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-semibold text-xs px-2.5 py-1 rounded-full"><i class="fa-solid fa-check me-1"></i>Đạt KPI</span>`;
+        } else if (isPassed) {
+          statusBadge = `<span class="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 font-semibold text-xs px-2.5 py-1 rounded-full"><i class="fa-solid fa-xmark me-1"></i>Chưa Đạt</span>`;
+        } else {
+          statusBadge = `<span class="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 font-semibold text-xs px-2.5 py-1 rounded-full"><i class="fa-solid fa-spinner fa-spin me-1"></i>Đang Chạy</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition">
+            <td class="py-4 px-4 font-semibold text-gray-900 dark:text-white">${k.title}</td>
+            <td class="py-4 px-4">
+              <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-lg ${k.cycle === 'Tuần' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}">
+                ${k.cycle}
+              </span>
+              <span class="text-xs text-gray-500 ml-1">(${k.scope === 'shared' ? 'Dùng chung' : 'Cá nhân'})</span>
+            </td>
+            <td class="py-4 px-4 text-xs font-medium">${k.deadline}</td>
+            <td class="py-4 px-4 min-w-[200px]">
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>${totalProgress} / ${k.target} ${k.unit}</span>
+                <span>${percent}%</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+              </div>
+            </td>
+            <td class="py-4 px-4 max-w-[220px]">${contribHtml}</td>
+            <td class="py-4 px-4">${statusBadge}</td>
+            <td class="py-4 px-4 text-right space-x-2">
+              <button onclick="editKpi('${k.id}')" class="text-gray-400 hover:text-blue-500 transition"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteKpi('${k.id}')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // RENDER LOGS HISTORY
+    function renderLogsHistory() {
+      const container = document.getElementById('logsHistoryList');
+      if (dailyLogs.length === 0) {
+        container.innerHTML = `<p class="text-sm text-gray-400 text-center py-6">Chưa có nhật ký báo cáo hằng ngày nào.</p>`;
+        return;
+      }
+
+      const sortedLogs = [...dailyLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      container.innerHTML = sortedLogs.map(l => {
+        const kpi = kpis.find(k => k.id === l.kpiId) || { title: "KPI đã xóa", unit: "" };
+        const user = users.find(u => u.id === l.userId) || { name: "Thành viên cũ" };
+
+        return `
+          <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-100 dark:border-gray-700 flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-gray-900 dark:text-white">${user.name}</span>
+                <span class="text-xs text-gray-400">• ${l.date}</span>
+              </div>
+              <p class="text-xs text-gray-600 dark:text-gray-300">
+                Đã báo cáo: <strong class="text-blue-600 dark:text-blue-400">+${l.value} ${kpi.unit}</strong> cho <em>"${kpi.title}"</em>
+              </p>
+              ${l.note ? `<p class="text-xs text-gray-500 dark:text-gray-400 italic">"${l.note}"</p>` : ''}
+            </div>
+            <button onclick="deleteLog('${l.id}')" class="text-gray-400 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // RENDER STATS & CHARTS
+    function renderStats() {
+      document.getElementById('statTotalKpis').innerText = kpis.length;
+      document.getElementById('statTotalLogs').innerText = dailyLogs.length;
+
+      const completed = kpis.filter(k => {
+        const prog = dailyLogs.filter(l => l.kpiId === k.id).reduce((s, l) => s + Number(l.value), 0);
+        return prog >= k.target;
+      }).length;
+      document.getElementById('statCompletedKpis').innerText = completed;
+
+      const userContribCount = dailyLogs.filter(l => l.userId === currentUserId).length;
+      document.getElementById('statUserContrib').innerText = userContribCount;
+    }
+
+    function renderContribChart() {
+      const ctx = document.getElementById('contribChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const userTotals = users.map(u => {
+        return dailyLogs.filter(l => l.userId === u.id).reduce((sum, l) => sum + Number(l.value), 0);
+      });
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: users.map(u => u.name),
+          datasets: [{
+            data: userTotals.some(v => v > 0) ? userTotals : [1],
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    // MODAL HANDLERS & ACTIONS
+    function openKpiModal() {
+      document.getElementById('kpiId').value = '';
+      document.getElementById('kpiTitle').value = '';
+      document.getElementById('kpiTargetValue').value = '';
+      document.getElementById('kpiUnit').value = '';
+      document.getElementById('kpiDeadline').value = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      document.getElementById('kpiModalTitle').innerText = 'Tạo KPI Target Mới';
+      document.getElementById('kpiModal').classList.remove('hidden');
+    }
+
+    function editKpi(id) {
+      const k = kpis.find(x => x.id === id);
+      if (!k) return;
+      document.getElementById('kpiId').value = k.id;
+      document.getElementById('kpiTitle').value = k.title;
+      document.getElementById('kpiCycle').value = k.cycle;
+      document.getElementById('kpiScope').value = k.scope;
+      document.getElementById('kpiTargetValue').value = k.target;
+      document.getElementById('kpiUnit').value = k.unit;
+      document.getElementById('kpiDeadline').value = k.deadline;
+      document.getElementById('kpiModalTitle').innerText = 'Chỉnh Sửa KPI Target';
+      document.getElementById('kpiModal').classList.remove('hidden');
+    }
+
+    function handleSaveKpi(e) {
+      e.preventDefault();
+      const id = document.getElementById('kpiId').value;
+      const title = document.getElementById('kpiTitle').value.trim();
+      const cycle = document.getElementById('kpiCycle').value;
+      const scope = document.getElementById('kpiScope').value;
+      const target = parseFloat(document.getElementById('kpiTargetValue').value);
+      const unit = document.getElementById('kpiUnit').value.trim();
+      const deadline = document.getElementById('kpiDeadline').value;
+
+      if (id) {
+        const k = kpis.find(x => x.id === id);
+        if (k) Object.assign(k, { title, cycle, scope, target, unit, deadline });
+      } else {
+        kpis.push({
+          id: "k_" + Date.now(),
+          title, cycle, scope, target, unit, deadline,
+          creatorId: currentUserId
+        });
+      }
+
+      saveState();
+      closeModal('kpiModal');
+      render();
+    }
+
+    function deleteKpi(id) {
+      if (confirm("Bạn có chắc muốn xóa KPI này? Tất cả báo cáo liên quan sẽ bị loại bỏ.")) {
+        kpis = kpis.filter(k => k.id !== id);
+        dailyLogs = dailyLogs.filter(l => l.kpiId !== id);
+        saveState();
+        render();
+      }
+    }
+
+    function openLogModal() {
+      if (kpis.length === 0) {
+        alert("Vui lòng tạo ít nhất 1 KPI trước khi báo cáo daily!");
+        return;
+      }
+
+      const currentUser = users.find(u => u.id === currentUserId) || { name: 'Thành viên' };
+      document.getElementById('logUserDisplay').innerText = `Tài khoản: ${currentUser.name}`;
+
+      const select = document.getElementById('logKpiId');
+      select.innerHTML = kpis.map(k => `<option value="${k.id}">${k.title} (${k.cycle})</option>`).join('');
+
+      document.getElementById('logValue').value = '';
+      document.getElementById('logNote').value = '';
+      document.getElementById('logModal').classList.remove('hidden');
+    }
+
+    function handleSaveLog(e) {
+      e.preventDefault();
+      const kpiId = document.getElementById('logKpiId').value;
+      const value = parseFloat(document.getElementById('logValue').value);
+      const note = document.getElementById('logNote').value.trim();
+      const today = new Date().toISOString().split('T')[0];
+
+      dailyLogs.push({
+        id: "l_" + Date.now(),
+        kpiId,
+        userId: currentUserId,
+        value,
+        note,
+        date: today
+      });
+
+      saveState();
+      closeModal('logModal');
+      render();
+    }
+
+    function deleteLog(id) {
+      dailyLogs = dailyLogs.filter(l => l.id !== id);
+      saveState();
+      render();
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-sun';
+      } else {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-moon';
+      }
+    }
+  </script>
+</body>
+</html>
